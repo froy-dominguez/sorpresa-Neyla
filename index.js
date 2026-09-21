@@ -12,6 +12,7 @@ const distanceUnit = document.querySelector('#distanceUnit');
 const distanceStatus = document.querySelector('#distanceStatus');
 const distancePhrase = document.querySelector('#distancePhrase');
 const locationButton = document.querySelector('#locationButton');
+const profileSelector = document.querySelector('#profileSelector');
 const frasesDistancia = [
   'Cada kilometro tambien guarda una historia de los dos.',
   'Aunque estes lejos, siempre encuentro el camino hacia ti.',
@@ -22,7 +23,7 @@ const frasesDistancia = [
 ];
 let database = null;
 let otherLocation = null;
-let watchId = null;
+let selectedProfile = currentUser;
 
 function actualizarFraseDistancia() {
   const ahora = new Date();
@@ -45,7 +46,7 @@ function pintarDistancia(distanciaKm) {
 }
 
 function actualizarEstado() {
-  const otherUser = currentUser === 'froy' ? 'neyla' : 'froy';
+  const otherUser = selectedProfile === 'froy' ? 'neyla' : 'froy';
   if (!otherLocation) { distanceStatus.textContent = `${otherUser === 'froy' ? 'Froy' : 'Neyla'} está desconectado/a. Esperando ubicación...`; return; }
   const ownLocation = window.currentOwnLocation;
   if (!ownLocation) { distanceStatus.textContent = `${otherUser === 'froy' ? 'Froy' : 'Neyla'} está en línea`; return; }
@@ -56,16 +57,16 @@ function actualizarEstado() {
 function manejarErrorUbicacion(error) {
   distanceStatus.textContent = error.code === 1 ? 'Activa el GPS y permite el acceso a tu ubicación.' : 'No se pudo obtener tu ubicación. Revisa el GPS.';
   locationButton.disabled = false;
-  locationButton.textContent = 'Saber ubicación actual de Froy';
+  locationButton.textContent = `Saber ubicación actual de ${selectedProfile === 'froy' ? 'Neyla' : 'Froy'}`;
 }
 
 function iniciarFirebase() {
   const ready = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL && window.firebase;
-  if (!ready) { distanceStatus.textContent = `Modo local (${currentUser}). Configura Firebase para sincronizar.`; return; }
+  if (!ready) { distanceStatus.textContent = `Modo local (${selectedProfile}). Configura Firebase para sincronizar.`; return; }
   try {
     if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
     database = firebase.database();
-    const otherUser = currentUser === 'froy' ? 'neyla' : 'froy';
+    const otherUser = selectedProfile === 'froy' ? 'neyla' : 'froy';
     database.ref(`/ubicaciones/${otherUser}`).on('value', (snapshot) => { otherLocation = snapshot.val(); actualizarEstado(); });
   } catch (error) {
     distanceStatus.textContent = 'No se pudo conectar con Firebase.';
@@ -74,23 +75,52 @@ function iniciarFirebase() {
 }
 
 function pedirUbicacionActual() {
-  if (!navigator.geolocation) { distanceStatus.textContent = 'La geolocalización no está disponible en este navegador.'; return; }
+  if (!navigator.geolocation) { 
+    distanceStatus.textContent = 'La geolocalización no está disponible en este navegador.'; 
+    return; 
+  }
   locationButton.disabled = true;
-  locationButton.textContent = '⌁ Compartiendo ubicación...';
+  locationButton.textContent = '⌁ Obteniendo ubicación...';
   distanceStatus.textContent = 'Solicitando permiso de ubicación...';
-  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-  watchId = navigator.geolocation.watchPosition((position) => {
-    const location = { latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy: position.coords.accuracy, updatedAt: window.firebase?.database?.ServerValue?.TIMESTAMP || Date.now() };
-    window.currentOwnLocation = location;
-    if (database) database.ref(`/ubicaciones/${currentUser}`).set(location).catch(() => { distanceStatus.textContent = 'GPS activo, pero Firebase no pudo guardar la ubicación.'; });
-    locationButton.disabled = false;
-    locationButton.textContent = `Compartiendo como ${currentUser}`;
-    actualizarEstado();
-  }, manejarErrorUbicacion, { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 });
+  
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const location = { 
+        latitude: position.coords.latitude, 
+        longitude: position.coords.longitude, 
+        accuracy: position.coords.accuracy, 
+        updatedAt: window.firebase?.database?.ServerValue?.TIMESTAMP || Date.now() 
+      };
+      window.currentOwnLocation = location;
+      if (database) {
+        database.ref(`/ubicaciones/${selectedProfile}`).set(location)
+          .catch(() => { 
+            distanceStatus.textContent = 'GPS activo, pero Firebase no pudo guardar la ubicación.'; 
+          });
+      }
+      locationButton.disabled = false;
+      locationButton.textContent = `Ubicación obtenida como ${selectedProfile}`;
+      actualizarEstado();
+    },
+    manejarErrorUbicacion,
+    { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+  );
+}
+
+function cambiarPerfil() {
+  selectedProfile = profileSelector.value;
+  localStorage.setItem('froyUsuario', selectedProfile);
+  if (database) {
+    const otherUser = selectedProfile === 'froy' ? 'neyla' : 'froy';
+    database.ref(`/ubicaciones/${otherUser}`).on('value', (snapshot) => { otherLocation = snapshot.val(); actualizarEstado(); });
+  }
+  locationButton.textContent = `Saber ubicación actual de ${selectedProfile === 'froy' ? 'Neyla' : 'Froy'}`;
+  actualizarEstado();
 }
 
 actualizarFraseDistancia();
 
+profileSelector.addEventListener('change', cambiarPerfil);
 locationButton.addEventListener('click', pedirUbicacionActual);
 window.setInterval(actualizarFraseDistancia, 60000);
     }
