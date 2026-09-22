@@ -9,6 +9,7 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
 	<link rel="stylesheet" href="styles.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 	<style>
 		:root {
 			--night: #090b20;
@@ -304,7 +305,7 @@
 				<span class="music-title">Sustancias en mi corazón<br><small>STRANGEHUMAN</small></span>
 				<button class="music-prompt" id="musicPrompt" type="button">▶ Haz clic aquí para reproducir la canción</button>
 				<button class="music-button" type="button" aria-label="Activar música romántica" aria-pressed="false">♫</button>
-				<audio id="cancionPrincipal" src="./cancion.mp3" preload="auto" controls></audio>
+				<audio id="audioElement" src="cancion.mp3" preload="auto"></audio>
 				<p class="audio-error" id="audioError" role="alert" hidden>No se pudo cargar la canción. Verifica que el archivo cancion.mp3 esté disponible.</p>
 			</div>
 		</div>
@@ -352,7 +353,6 @@
 		</div>
 	</div>
 	<div class="music-note" aria-hidden="true">♫</div>
-	<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 	<script src="script.js"></script>
 
 	<script>
@@ -477,7 +477,7 @@
 		document.querySelector('#nextMemory').addEventListener('click', () => showMemory(1));
 
 		const musicButton = document.querySelector('.music-button');
-		const audio = document.getElementById('cancionPrincipal');
+		const audio = document.getElementById('audioElement');
 		const audioError = document.getElementById('audioError');
 		const lyricsPanel = document.getElementById('lyricsPanel');
 		const musicPrompt = document.getElementById('musicPrompt');
@@ -668,4 +668,6 @@
 	</script>
 	<script src="index.js"></script>
 </body>
+</html>
+
 </html>
