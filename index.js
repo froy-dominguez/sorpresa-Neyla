@@ -124,3 +124,4 @@ profileSelector.addEventListener('change', cambiarPerfil);
 locationButton.addEventListener('click', pedirUbicacionActual);
 window.setInterval(actualizarFraseDistancia, 60000);
     }
+
